@@ -58,7 +58,7 @@ class _NickNameSettingState extends State<NickNameSetting> {
               decoration: InputDecoration(
                 hintText: '닉네임 입력',
                 hintStyle: TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 30.sp,
                 ),
                 border: InputBorder.none,
