@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:samsisegi/custom_component/custom_bottom_navigation_bar.dart';
 import 'package:samsisegi/custom_component/home_content.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/my_page.dart';
 import 'package:samsisegi/write_diary/select_emotions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,27 +33,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index != _currentIndex) {
+    if (index == _currentIndex) {
+      // 새로고침 처리
+      _refreshCurrentPage();
+    } else {
       setState(() {
         _currentIndex = index;
+        print("탭으로 변경된 인덱스: $_currentIndex");
       });
+
+      // Navigator로 페이지 이동
       if (index == 0) {
-        Navigator.pushReplacement(
-          context,
-          CupertinoPageRoute(
-            builder: (context) => const HomeScreen(),
-          ),
-        );
-      }
-      if (index == 1) {
-        Navigator.pushReplacement(
-          context,
-          CupertinoPageRoute(
-            builder: (context) => const SelectEmotions(),
-          ),
-        );
+        _navigateToPage(const HomeScreen(), 0);
+      } else if (index == 1) {
+        _navigateToPage(const SelectEmotions(), 1);
+      } else if (index == 2) {
+        _navigateToPage(const MyPage(), 2);
       }
     }
+  }
+
+  // 페이지 이동 후 돌아왔을 때 인덱스를 복구하는 함수
+  Future<void> _navigateToPage(Widget page, int index) async {
+    await Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => page,
+      ),
+    ).then((_) {
+      setState(() {
+        _currentIndex = 0;
+        print("복구된 인덱스: $_currentIndex");
+      });
+    });
+  }
+
+  void _refreshCurrentPage() {
+    setState(() {});
   }
 
   @override
