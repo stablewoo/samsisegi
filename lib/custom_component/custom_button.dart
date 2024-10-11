@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:samsisegi/design_system.dart';
 
 class PrimaryButtonH48 extends StatelessWidget {
   final String text;
@@ -18,13 +19,21 @@ class PrimaryButtonH48 extends StatelessWidget {
     return ElevatedButton(
       onPressed: isEnable ? onPressed : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isEnable ? Colors.black : Colors.grey,
+        backgroundColor: isEnable ? AppColors.enable : AppColors.disable,
         minimumSize: Size(double.infinity, 48.h),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.r),
         ),
       ),
-      child: Text(text),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: AppColors.white,
+          fontFamily: 'SuitSemiBold',
+          fontSize: 18.sp,
+          height: 24 / 18,
+        ),
+      ),
     );
   }
 }
