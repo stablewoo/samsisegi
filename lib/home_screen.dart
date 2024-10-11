@@ -157,8 +157,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-          currentIndex: _currentIndex, onTap: _onItemTapped),
+      bottomNavigationBar: Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+        child: CustomBottomNavigationBar(
+            currentIndex: _currentIndex, onTap: _onItemTapped),
+      ),
     );
   }
 }
