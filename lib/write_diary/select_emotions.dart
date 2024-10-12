@@ -6,6 +6,7 @@ import 'package:samsisegi/custom_component/custom_button.dart';
 import 'package:samsisegi/custom_component/emotion_select_box.dart';
 import 'package:samsisegi/custom_component/emotion_tag.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/write_diary/writing_page.dart';
 
 class SelectEmotions extends StatefulWidget {
   const SelectEmotions({super.key});
@@ -170,7 +171,14 @@ class _SelectEmotionsState extends State<SelectEmotions> {
         child: PrimaryButtonH48(
           text: '다음',
           isEnable: true,
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) => const WritingPage(),
+              ),
+            );
+          },
         ),
       ),
     );
