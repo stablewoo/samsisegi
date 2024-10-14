@@ -18,7 +18,9 @@ class SelectEmotions extends StatefulWidget {
 class _SelectEmotionsState extends State<SelectEmotions> {
   String? selectedEmotion;
   int _selectedIndex = -1;
+  List<String> selectedTags = [];
 
+//감정 선택 시 호출되는 함수
   void onEmotionSelected(String emotion, int index) {
     setState(() {
       if (_selectedIndex == index) {
@@ -27,6 +29,18 @@ class _SelectEmotionsState extends State<SelectEmotions> {
       } else {
         selectedEmotion = emotion;
         _selectedIndex = index;
+      }
+      selectedTags.clear();
+    });
+  }
+
+//태그 선택/해제 시 호출되는 함수
+  void onTagTapped(String tag) {
+    setState(() {
+      if (selectedTags.contains(tag)) {
+        selectedTags.remove(tag);
+      } else {
+        selectedTags.add(tag);
       }
     });
   }
@@ -170,36 +184,44 @@ class _SelectEmotionsState extends State<SelectEmotions> {
             top: 16.h),
         child: PrimaryButtonH48(
           text: '다음',
-          isEnable: true,
-          onPressed: () {
-            Navigator.push(
-              context,
-              CupertinoPageRoute(
-                builder: (context) => const WritingPage(),
-              ),
-            );
-          },
+          isEnable: selectedTags.isNotEmpty, // 태그 선택 상태에 따라 버튼 활성화
+          onPressed: selectedTags.isNotEmpty
+              ? () {
+                  Navigator.push(
+                    context,
+                    CupertinoPageRoute(
+                      builder: (context) => const WritingPage(),
+                    ),
+                  );
+                }
+              : () {},
         ),
       ),
     );
   }
-}
 
-Widget _buildEmotionTags(String emotion) {
-  switch (emotion) {
-    case '편안해요':
-    case '기분 최고':
-    case '신나요':
-      return const HappyEmotionTag(); // 행복한 감정에 맞는 태그 컴포넌트
-    case '그저 그래요':
-    case '귀찮아요':
-    case '피곤해요':
-      return const SosoEmotionTags(); // 무난한 감정에 맞는 태그 컴포넌트
-    case '우울해요':
-    case '짜증나요':
-    case '극대노':
-      return const BadEmotionTags(); // 부정적인 감정에 맞는 태그 컴포넌트
-    default:
-      return Container(); // 기본 빈 컨테이너
+  Widget _buildEmotionTags(String emotion) {
+    switch (emotion) {
+      case '편안해요':
+      case '기분 최고':
+      case '신나요':
+        return HappyEmotionTag(
+            onTagTapped: onTagTapped,
+            selectedTags: selectedTags); // 행복한 감정에 맞는 태그 컴포넌트
+      case '그저 그래요':
+      case '귀찮아요':
+      case '피곤해요':
+        return SosoEmotionTags(
+            onTagTapped: onTagTapped,
+            selectedTags: selectedTags); // 무난한 감정에 맞는 태그 컴포넌트
+      case '우울해요':
+      case '짜증나요':
+      case '극대노':
+        return BadEmotionTags(
+            onTagTapped: onTagTapped,
+            selectedTags: selectedTags); // 부정적인 감정에 맞는 태그 컴포넌트
+      default:
+        return Container(); // 기본 빈 컨테이너
+    }
   }
 }

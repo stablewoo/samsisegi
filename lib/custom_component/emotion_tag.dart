@@ -2,14 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:samsisegi/design_system.dart';
 
-class HappyEmotionTag extends StatefulWidget {
-  const HappyEmotionTag({super.key});
-
-  @override
-  State<HappyEmotionTag> createState() => _HappyEmotionTagState();
-}
-
-class _HappyEmotionTagState extends State<HappyEmotionTag> {
+class HappyEmotionTag extends StatelessWidget {
   final List<String> tags = [
     '신남',
     '기쁨',
@@ -26,17 +19,14 @@ class _HappyEmotionTagState extends State<HappyEmotionTag> {
     '평온',
     '차분'
   ];
-  final List<String> selectedTags = [];
+  final List<String> selectedTags;
+  final Function(String) onTagTapped;
 
-  void _onTagTapped(String tag) {
-    setState(() {
-      if (selectedTags.contains(tag)) {
-        selectedTags.remove(tag);
-      } else {
-        selectedTags.add(tag);
-      }
-    });
-  }
+  HappyEmotionTag({
+    super.key,
+    required this.selectedTags,
+    required this.onTagTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +36,7 @@ class _HappyEmotionTagState extends State<HappyEmotionTag> {
       children: tags.map((tag) {
         final isSelected = selectedTags.contains(tag);
         return GestureDetector(
-          onTap: () => _onTagTapped(tag),
+          onTap: () => onTagTapped(tag),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -71,26 +61,16 @@ class _HappyEmotionTagState extends State<HappyEmotionTag> {
   }
 }
 
-class SosoEmotionTags extends StatefulWidget {
-  const SosoEmotionTags({super.key});
-
-  @override
-  State<SosoEmotionTags> createState() => _SosoEmotionTagsState();
-}
-
-class _SosoEmotionTagsState extends State<SosoEmotionTags> {
+class SosoEmotionTags extends StatelessWidget {
   final List<String> tags = ['차분함', '평온함', '충족감 느낌', '무관심함', '지침'];
-  final List<String> selectedTags = [];
+  final List<String> selectedTags;
+  final Function(String) onTagTapped;
 
-  void _onTagTapped(String tag) {
-    setState(() {
-      if (selectedTags.contains(tag)) {
-        selectedTags.remove(tag);
-      } else {
-        selectedTags.add(tag);
-      }
-    });
-  }
+  SosoEmotionTags({
+    super.key,
+    required this.selectedTags,
+    required this.onTagTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +80,7 @@ class _SosoEmotionTagsState extends State<SosoEmotionTags> {
       children: tags.map((tag) {
         final isSelected = selectedTags.contains(tag);
         return GestureDetector(
-          onTap: () => _onTagTapped(tag),
+          onTap: () => onTagTapped(tag),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -125,14 +105,7 @@ class _SosoEmotionTagsState extends State<SosoEmotionTags> {
   }
 }
 
-class BadEmotionTags extends StatefulWidget {
-  const BadEmotionTags({super.key});
-
-  @override
-  State<BadEmotionTags> createState() => _BadEmotionTagsState();
-}
-
-class _BadEmotionTagsState extends State<BadEmotionTags> {
+class BadEmotionTags extends StatelessWidget {
   final List<String> tags = [
     '화남',
     '불안함',
@@ -151,17 +124,14 @@ class _BadEmotionTagsState extends State<BadEmotionTags> {
     '부러움',
     '외로움'
   ];
-  final List<String> selectedTags = [];
+  final List<String> selectedTags;
+  final Function(String) onTagTapped;
 
-  void _onTagTapped(String tag) {
-    setState(() {
-      if (selectedTags.contains(tag)) {
-        selectedTags.remove(tag);
-      } else {
-        selectedTags.add(tag);
-      }
-    });
-  }
+  BadEmotionTags({
+    super.key,
+    required this.selectedTags,
+    required this.onTagTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +141,7 @@ class _BadEmotionTagsState extends State<BadEmotionTags> {
       children: tags.map((tag) {
         final isSelected = selectedTags.contains(tag);
         return GestureDetector(
-          onTap: () => _onTagTapped(tag),
+          onTap: () => onTagTapped(tag),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
             decoration: BoxDecoration(
@@ -193,6 +163,5 @@ class _BadEmotionTagsState extends State<BadEmotionTags> {
         );
       }).toList(),
     );
-    ;
   }
 }
