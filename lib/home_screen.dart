@@ -30,12 +30,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onSwipeLeft() {
     setState(() {
       currentDate = currentDate.add(Duration(days: 1)); // 하루 전
+      _loadDiaryEntries();
     });
   }
 
   void _onSwipeRight() {
     setState(() {
       currentDate = currentDate.subtract(Duration(days: 1)); // 하루 후
+      _loadDiaryEntries();
     });
   }
 
@@ -50,9 +52,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadDiaryEntries() async {
     final box = await Hive.openBox<DiaryEntry>('diaryBox');
 
-    for (var period in ['morning', 'afternoon', 'evening']) {
-      final entry =
-          box.get('${DateFormat('yyyy-MM-dd').format(currentDate)}_$period');
+    for (var period in ['morning', 'afternoon', 'night']) {
+      String key = '${DateFormat('yyyy-MM-dd').format(currentDate)}_$period';
+      final entry = box.get(key);
+
+      // 디버깅용으로 로그 추가
+      print('불러온 키: $key, 불러온 데이터: ${entry?.toString()}');
+
       setState(() {
         entries[period] = entry; // 각 시간대의 일기 데이터를 맵에 저장
       });
@@ -117,12 +123,12 @@ class _HomeScreenState extends State<HomeScreen> {
             period = 'afternoon'; // 오후
           } else if (now.hour >= 18 && now.hour < 24) {
             formattedDate = DateFormat('yyyy-MM-dd').format(now);
-            period = 'evening'; // 저녁/밤
+            period = 'night'; // 저녁/밤
           } else {
             // 새벽 5시 이전이면 전날 밤
             DateTime previousDay = now.subtract(const Duration(days: 1));
             formattedDate = DateFormat('yyyy-MM-dd').format(previousDay);
-            period = 'evening'; // 전날 저녁/밤
+            period = 'night'; // 전날 저녁/밤
           }
 
           _navigateToPage(

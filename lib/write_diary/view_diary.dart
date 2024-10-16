@@ -9,11 +9,11 @@ import 'package:samsisegi/diary_data/diary_entry.dart';
 import 'package:samsisegi/home_screen.dart';
 
 class ViewDiary extends StatefulWidget {
-  final int diaryIndex;
+  final String diaryKey;
 
   const ViewDiary({
     super.key,
-    required this.diaryIndex,
+    required this.diaryKey,
   });
 
   @override
@@ -31,8 +31,25 @@ class _ViewDiaryState extends State<ViewDiary> {
   }
 
   Future<void> _loadDiaryEntry() async {
+    final box = await Hive.openBox<DiaryEntry>('diaryBox'); // Hive Box 열기
+    // diaryIndex 대신 key를 사용하여 일기를 가져옴
+    final entry = box.get(widget.diaryKey); // 기존 diaryIndex 사용
+
+    if (entry != null) {
+      print('불러온 일기 데이터: ${entry.toString()}'); // 불러온 일기 데이터 출력
+    } else {
+      print('일기 데이터를 불러오지 못했습니다.');
+    }
+    setState(() {
+      diaryEntry = entry; // 가져온 일기 데이터를 diaryEntry에 저장
+      isLoading = false;
+    });
+  }
+
+  /* Future<void> _loadDiaryEntry() async {
     final box = await Hive.openBox<DiaryEntry>('diaryBox'); // Open the Hive box
     final entry = box.getAt(widget.diaryIndex);
+
     if (entry != null) {
       print('불러온 일기 데이터: ${entry.toString()}'); // 불러온 일기 데이터 출력
     } else {
@@ -41,8 +58,8 @@ class _ViewDiaryState extends State<ViewDiary> {
     setState(() {
       diaryEntry = entry; // Get the diary entry by index
       isLoading = false;
-    });
-  }
+    }); 
+  } */
 
   // 날짜 형식을 변환하는 함수
   String getFormattedDate(String date) {

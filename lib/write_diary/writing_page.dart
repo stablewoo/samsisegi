@@ -67,10 +67,14 @@ class _WritingPageState extends State<WritingPage> {
   }
 
   void _checkFormValidity() {
-    setState(() {
-      isNextButtonEnabled = _textController.text.trim().isNotEmpty &&
-          _diaryController.text.trim().isNotEmpty;
-    });
+    final isTitleValid = _textController.text.trim().isNotEmpty;
+    final isContentValid = _diaryController.text.trim().isNotEmpty;
+
+    if (isNextButtonEnabled != (isTitleValid && isContentValid)) {
+      setState(() {
+        isNextButtonEnabled = isTitleValid && isContentValid;
+      });
+    }
   }
 
   String getFormattedDate() {
@@ -94,7 +98,7 @@ class _WritingPageState extends State<WritingPage> {
     }
   }
 
-  Future<int> saveDiaryEntry() async {
+  Future<void> saveDiaryEntry() async {
     final box = await Hive.openBox<DiaryEntry>('diaryBox');
 
     final newDiary = DiaryEntry(
@@ -106,10 +110,14 @@ class _WritingPageState extends State<WritingPage> {
       content: _diaryController.text,
     );
 
-    int diaryIndex = await box.add(newDiary); // 일기 저장
+    // Key는 날짜와 시간대를 조합한 값으로 설정
+    String key = '${widget.date}_${widget.period}';
+
+    // Key를 사용하여 일기를 저장
+    await box.put(key, newDiary); // 일기 저장 (key를 사용)
+
     print('일기 저장 완료: ${newDiary.toString()}'); // 저장된 일기 데이터 출력
-    print('저장된 일기 인덱스: $diaryIndex'); // 저장된 인덱스 출력
-    return diaryIndex;
+    print('저장된 키: $key'); // 저장된 Key 출력
   }
 
   @override
@@ -262,13 +270,15 @@ class _WritingPageState extends State<WritingPage> {
             text: '일기 저장',
             isEnable: isNextButtonEnabled, // 태그 선택 상태에 따라 버튼 활성화
             onPressed: () async {
-              int diaryIndex = await saveDiaryEntry();
+              String key = '${widget.date}_${widget.period}';
+
+              await saveDiaryEntry();
 
               Navigator.push(
                 context,
                 CupertinoPageRoute(
                   builder: (context) => ViewDiary(
-                    diaryIndex: diaryIndex,
+                    diaryKey: key,
                   ),
                 ),
               );
