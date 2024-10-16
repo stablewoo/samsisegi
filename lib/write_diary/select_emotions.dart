@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:samsisegi/custom_component/custom_button.dart';
 import 'package:samsisegi/custom_component/emotion_select_box.dart';
 import 'package:samsisegi/custom_component/emotion_tag.dart';
@@ -9,7 +10,9 @@ import 'package:samsisegi/design_system.dart';
 import 'package:samsisegi/write_diary/writing_page.dart';
 
 class SelectEmotions extends StatefulWidget {
-  const SelectEmotions({super.key});
+  final String date;
+  final String period;
+  const SelectEmotions({super.key, required this.date, required this.period});
 
   @override
   State<SelectEmotions> createState() => _SelectEmotionsState();
@@ -19,6 +22,60 @@ class _SelectEmotionsState extends State<SelectEmotions> {
   String? selectedEmotion;
   int _selectedIndex = -1;
   List<String> selectedTags = [];
+
+  bool isToday() {
+    String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    return widget.date == todayDate;
+  }
+
+  String getEmotionPrompt() {
+    if (isToday()) {
+      switch (widget.period) {
+        case 'morning':
+          return '오늘 아침을 표현해요';
+        case 'afternoon':
+          return '오늘 오후를 표현해요';
+        case 'evening':
+          return '오늘 저녁/밤을 표현해요';
+        default:
+          return '오늘 하루를 표현해요';
+      }
+    } else {
+      DateTime selectedDate = DateFormat("yyyy-MM-dd").parse(widget.date);
+      String newFormatDate = DateFormat('MM/dd').format(selectedDate);
+
+      // 시간대도 한글로 변환
+      String koreanPeriod;
+      switch (widget.period) {
+        case 'morning':
+          koreanPeriod = '아침';
+          break;
+        case 'afternoon':
+          koreanPeriod = '오후';
+          break;
+        case 'night':
+          koreanPeriod = '저녁/밤';
+          break;
+        default:
+          koreanPeriod = '시간대';
+      }
+
+      return '$newFormatDate의 $koreanPeriod을 표현해요';
+    }
+  }
+
+  String getSubtitlePrompt() {
+    switch (widget.period) {
+      case 'morning':
+        return '아침의 전반적인 느낌은 어땟나요?';
+      case 'afternoon':
+        return '오후의 전반적인 느낌은 어땟나요?';
+      case 'night':
+        return '저녁/밤의 전반적인 느낌은 어땟나요?';
+      default:
+        return '하루의 전반적인 느낌은 어땟나요?';
+    }
+  }
 
 //감정 선택 시 호출되는 함수
   void onEmotionSelected(String emotion, int index) {
@@ -66,7 +123,7 @@ class _SelectEmotionsState extends State<SelectEmotions> {
             children: [
               SizedBox(height: 24.h),
               Text(
-                '오늘 아침을 표현해요',
+                getEmotionPrompt(),
                 style: TextStyle(
                   color: AppColors.primary,
                   fontFamily: 'SuitBold',
@@ -77,7 +134,7 @@ class _SelectEmotionsState extends State<SelectEmotions> {
               ),
               SizedBox(height: 4.h),
               Text(
-                '아침의 전반적인 느낌은 어땠나요?',
+                getSubtitlePrompt(),
                 style: TextStyle(
                   color: AppColors.primary,
                   fontFamily: 'SuitRegular',
@@ -190,7 +247,11 @@ class _SelectEmotionsState extends State<SelectEmotions> {
                   Navigator.push(
                     context,
                     CupertinoPageRoute(
-                      builder: (context) => const WritingPage(),
+                      builder: (context) => WritingPage(
+                          date: widget.date, // 이전에 전달받은 날짜
+                          period: widget.period,
+                          emotion: selectedEmotion ?? '감정 없음',
+                          tags: selectedTags),
                     ),
                   );
                 }

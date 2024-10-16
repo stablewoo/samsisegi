@@ -1,12 +1,27 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:hive/hive.dart';
+import 'package:intl/intl.dart';
 import 'package:samsisegi/custom_component/custom_button.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/diary_data/diary_entry.dart';
+import 'package:samsisegi/write_diary/view_diary.dart';
 
 class WritingPage extends StatefulWidget {
-  const WritingPage({super.key});
+  final String date;
+  final String period;
+  final String emotion;
+  final List<String> tags;
+  const WritingPage({
+    super.key,
+    required this.emotion,
+    required this.tags,
+    required this.date,
+    required this.period,
+  });
 
   @override
   State<WritingPage> createState() => _WritingPageState();
@@ -58,6 +73,45 @@ class _WritingPageState extends State<WritingPage> {
     });
   }
 
+  String getFormattedDate() {
+    // 날짜 형식을 "yyyy년 MM월 dd일"로 변환
+    DateTime parsedDate = DateFormat('yyyy-MM-dd').parse(widget.date);
+    return DateFormat('yyyy/MM/dd').format(parsedDate);
+  }
+
+  String getFormattedPeriod() {
+    print('widget.period 값: ${widget.period}');
+    // 시간대에 따른 한글 변환
+    switch (widget.period) {
+      case 'morning':
+        return '아침';
+      case 'afternoon':
+        return '오후';
+      case 'evening':
+        return '저녁/밤';
+      default:
+        return '시간대';
+    }
+  }
+
+  Future<int> saveDiaryEntry() async {
+    final box = await Hive.openBox<DiaryEntry>('diaryBox');
+
+    final newDiary = DiaryEntry(
+      date: widget.date,
+      period: widget.period,
+      emotion: widget.emotion,
+      tags: widget.tags,
+      title: _textController.text,
+      content: _diaryController.text,
+    );
+
+    int diaryIndex = await box.add(newDiary); // 일기 저장
+    print('일기 저장 완료: ${newDiary.toString()}'); // 저장된 일기 데이터 출력
+    print('저장된 일기 인덱스: $diaryIndex'); // 저장된 인덱스 출력
+    return diaryIndex;
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -93,7 +147,7 @@ class _WritingPageState extends State<WritingPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      '24 / 10 / 06, 아침',
+                      '${getFormattedDate()}, ${getFormattedPeriod()}',
                       style: TextStyle(
                         color: Color(0xFF8D8C82),
                         fontFamily: 'SuitRegular',
@@ -104,7 +158,7 @@ class _WritingPageState extends State<WritingPage> {
                     ),
                     const Spacer(),
                     Text(
-                      '편안해요',
+                      '${widget.emotion}',
                       style: TextStyle(
                         color: Color(0xFF8D8C82),
                         fontFamily: 'SuitRegular',
@@ -207,7 +261,18 @@ class _WritingPageState extends State<WritingPage> {
           child: PrimaryButtonH48(
             text: '일기 저장',
             isEnable: isNextButtonEnabled, // 태그 선택 상태에 따라 버튼 활성화
-            onPressed: () {},
+            onPressed: () async {
+              int diaryIndex = await saveDiaryEntry();
+
+              Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => ViewDiary(
+                    diaryIndex: diaryIndex,
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
