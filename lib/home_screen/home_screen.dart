@@ -1,18 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
-import 'package:samsisegi/design_system.dart';
-import 'package:samsisegi/home_screen/data_section.dart';
-import 'package:samsisegi/home_screen/diary_manager.dart';
-import 'package:samsisegi/write_diary/select_emotions.dart';
-import 'package:samsisegi/write_diary/view_diary.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../custom_component/custom_bottom_navigation_bar.dart';
-import '../custom_component/empty_home_content.dart';
-import '../custom_component/home_content.dart';
-import '../diary_data/diary_entry.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'package:samsisegi/custom_component/custom_bottom_navigation_bar.dart';
+import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/home_screen/home_contents.dart';
+import 'package:samsisegi/my_page.dart';
+import 'package:samsisegi/write_diary/select_emotions.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
@@ -23,22 +18,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? nickName = '';
   int _currentIndex = 0;
   DateTime currentDate = DateTime.now();
-  Map<String, DiaryEntry?> entries = {};
+  String? nickName = '';
 
   @override
   void initState() {
     super.initState();
     _loadNickName();
-    _loadDiaryEntries();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadDiaryEntries();
   }
 
   // 닉네임 불러오기 함수
@@ -49,9 +36,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _loadDiaryEntries() async {
-    entries = await DiaryManager.loadEntries(currentDate); // 분리된 로직 호출
-    setState(() {});
+  // MyPage에서 선택된 날짜를 처리하는 함수
+  void _onDateSelected(DateTime selectedDate) {
+    setState(() {
+      currentDate = selectedDate; // 선택된 날짜로 홈 화면 갱신
+      _currentIndex = 0; // 홈 화면으로 전환
+    });
   }
 
   void _onItemTapped(int index) {
@@ -63,7 +53,65 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       // 페이지 이동 처리
-      // 페이지 이동 관련 로직은 기존대로 유지
+      switch (index) {
+        case 0:
+          setState(() {
+            _currentIndex = index;
+          });
+          break;
+        case 1:
+          DateTime now = DateTime.now();
+          String formattedDate = DateFormat('yyyy-MM-dd').format(now);
+          String period;
+
+          // 시간대에 따른 분기 처리 (새벽 5시 이전이면 전날 밤)
+          if (now.hour >= 5 && now.hour < 12) {
+            formattedDate = DateFormat('yyyy-MM-dd').format(now);
+            period = 'morning'; // 아침
+          } else if (now.hour >= 12 && now.hour < 18) {
+            formattedDate = DateFormat('yyyy-MM-dd').format(now);
+            period = 'afternoon'; // 오후
+          } else if (now.hour >= 18 && now.hour < 24) {
+            formattedDate = DateFormat('yyyy-MM-dd').format(now);
+            period = 'night'; // 저녁/밤
+          } else {
+            // 새벽 5시 이전이면 전날 밤
+            DateTime previousDay = now.subtract(const Duration(days: 1));
+            formattedDate = DateFormat('yyyy-MM-dd').format(previousDay);
+            period = 'night'; // 전날 저녁/밤
+          }
+
+          _navigateToPage(
+              SelectEmotions(
+                date: formattedDate,
+                period: period,
+              ),
+              1);
+          break;
+        case 2:
+          setState(() {
+            _currentIndex = index;
+          });
+          break;
+      }
+    }
+  }
+
+  // 페이지 이동 후 돌아왔을 때 인덱스 복구
+  Future<void> _navigateToPage(Widget page, int index) async {
+    final result = await Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (context) => page),
+    );
+
+    if (result != null && result is DateTime) {
+      print("HomeScreen으로 전달된 날짜: $result"); // 여기가 실행되는지 확인
+      setState(() {
+        _currentIndex = 0; // 홈 화면으로 돌아옴
+        currentDate = result; // 선택된 날짜로 갱신
+      });
+    } else {
+      print("전달된 값이 없거나 잘못된 형식입니다."); // 이 부분도 확인
     }
   }
 
@@ -73,51 +121,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Color morningColor = getTimeColor(5, 24);
-    Color afternoonColor = getTimeColor(12, 24);
-    Color nightColor = getTimeColor(18, 24);
-
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity! < 0) {
-          setState(
-              () => currentDate = currentDate.add(const Duration(days: 1)));
-          _loadDiaryEntries();
-        } else if (details.primaryVelocity! > 0) {
-          setState(() =>
-              currentDate = currentDate.subtract(const Duration(days: 1)));
-          _loadDiaryEntries();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: _buildAppBar(),
-        body: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 16.h),
-              _buildDivider(),
-              SizedBox(height: 40.h),
-              DateSection(currentDate: currentDate), // 날짜 섹션 컴포넌트로 분리
-              SizedBox(height: 40.h),
-              _buildHomeContent('morning', "오늘 아침은 어땠나요?", "朝 |", morningColor),
-              SizedBox(height: 16.h),
-              _buildHomeContent(
-                  'afternoon', "오늘 오후는 어땠나요?", "午 |", afternoonColor),
-              SizedBox(height: 16.h),
-              _buildHomeContent('night', "오늘 저녁/밤은 어땠나요?", "夜 |", nightColor),
-            ],
-          ),
-        ),
-        bottomNavigationBar: Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewPadding.bottom),
-          child: CustomBottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: _onItemTapped,
-          ),
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(44.h),
+        child: _buildAppBar(),
+      ),
+      body: IndexedStack(
+        index: _currentIndex, // 현재 선택된 탭의 인덱스
+        children: [
+          HomeContents(
+            selectedDate: currentDate,
+          ), // 0번 탭: 홈 화면
+          Container(), // 1번 탭은 화면 이동만, 여기서는 빈 컨테이너
+          MyPage(onDateSelected: _onDateSelected), // 2번 탭: 마이 페이지
+        ],
+      ),
+      bottomNavigationBar: Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+        child: CustomBottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _onItemTapped,
         ),
       ),
     );
@@ -132,69 +157,12 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         child: Row(
           children: [
-            Text("안녕하세요,", style: TextStyle(fontWeight: FontWeight.w300)),
+            Text("안녕하세요,", style: AppTextStyles.appBarExtraLight),
             SizedBox(width: 2.w),
-            Text('$nickName님', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text('$nickName님', style: AppTextStyles.appBarSemiBold),
           ],
         ),
       ),
     );
-  }
-
-  Divider _buildDivider() => Divider(color: Colors.black, height: 1.h);
-
-  Widget _buildHomeContent(
-      String period, String contentText, String timeText, Color timeColor) {
-    final entry = entries[period];
-    if (entry != null) {
-      return GestureDetector(
-        onTap: () {
-          String diaryKey =
-              '${DateFormat('yyyy-MM-dd').format(currentDate)}_$period';
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (context) => ViewDiary(diaryKey: diaryKey),
-            ),
-          );
-        },
-        child: HomeContent(
-            timeText: timeText,
-            titleText: entry.title,
-            contentText: entry.content),
-      );
-    } else {
-      return EmptyHomeContent(
-        timeText: timeText,
-        contentText: contentText,
-        timeColor: timeColor,
-        onTap: () {
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-                builder: (context) => SelectEmotions(
-                    date: DateFormat('yyyy-MM-dd').format(currentDate),
-                    period: period)),
-          );
-        },
-      );
-    }
-  }
-
-  Color getTimeColor(int startHour, int endHour) {
-    DateTime now = DateTime.now();
-    DateTime selectedDate =
-        DateTime(currentDate.year, currentDate.month, currentDate.day);
-
-    if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
-      return AppColors.primary;
-    } else if (selectedDate.isAfter(DateTime(now.year, now.month, now.day))) {
-      return AppColors.gray;
-    } else {
-      int currentHour = now.hour;
-      return currentHour >= startHour && currentHour < endHour
-          ? AppColors.primary
-          : AppColors.gray;
-    }
   }
 }

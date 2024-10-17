@@ -6,7 +6,8 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/design_system.dart';
 import 'package:samsisegi/diary_data/diary_entry.dart';
-import 'package:samsisegi/home_screen/home_screen.dart';
+import 'package:samsisegi/home_screen/home_contents.dart';
+import 'package:samsisegi/write_diary/writing_page.dart';
 
 class ViewDiary extends StatefulWidget {
   final String diaryKey;
@@ -52,6 +53,11 @@ class _ViewDiaryState extends State<ViewDiary> {
     });
   }
 
+  Future<DiaryEntry?> _getDiaryEntry(String key) async {
+    final box = await Hive.openBox<DiaryEntry>('diaryBox');
+    return box.get(key); // 키를 통해 해당 일기 데이터를 불러옴
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,12 +75,48 @@ class _ViewDiaryState extends State<ViewDiary> {
                 context,
                 (route) {
                   print('Checking route: ${route.settings.name}'); // 스택 탐색 시 출력
-                  return route.settings.name == HomeScreen.routeName;
+                  return route.settings.name == HomeContents.routeName;
                 },
               );
             },
             icon: SvgPicture.asset('assets/icons/back_arrow_24.svg'),
           ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                String key = '${diaryEntry?.date}_${diaryEntry?.period}';
+                final existingDiaryEntry = await _getDiaryEntry(key);
+
+                if (existingDiaryEntry != null) {
+                  print('일기 데이터 불러옴: ${existingDiaryEntry.toString()}');
+                  Navigator.push(
+                    context,
+                    CupertinoPageRoute(
+                      builder: (context) => WritingPage(
+                        date: existingDiaryEntry.date, // 기존 일기 날짜 전달
+                        period: existingDiaryEntry.period, // 기존 일기 시간대 전달
+                        emotion: existingDiaryEntry.emotion, // 기존 감정 전달
+                        tags: existingDiaryEntry.tags, // 기존 태그 전달
+                        diaryEntry: existingDiaryEntry,
+                      ),
+                    ),
+                  );
+                } else {
+                  print('일기 데이터를 불러오지 못했습니다.');
+                }
+              },
+              child: Text(
+                '수정',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontFamily: 'SuitBold',
+                  fontSize: 16.sp,
+                  height: 32 / 16,
+                  letterSpacing: -0.32,
+                ),
+              ),
+            )
+          ],
         ),
       ),
       body: Padding(

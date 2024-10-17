@@ -49,7 +49,7 @@ class EmptyHomeContent extends StatelessWidget {
           SizedBox(height: 24.h),
           Center(
             child: SizedBox(
-              width: 265.w,
+              width: 335.w,
               child: Text(
                 contentText, // 파라미터로 전달된 텍스트 사용
                 textAlign: TextAlign.center,
@@ -58,7 +58,7 @@ class EmptyHomeContent extends StatelessWidget {
                   fontFamily: 'SuitMedium',
                   fontSize: 24.sp,
                   height: 1,
-                  wordSpacing: -0.48,
+                  letterSpacing: -0.48,
                 ),
               ),
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:samsisegi/custom_component/custom_button.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/home_screen/home_contents.dart';
 import 'package:samsisegi/home_screen/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

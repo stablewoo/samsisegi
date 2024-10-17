@@ -15,12 +15,15 @@ class WritingPage extends StatefulWidget {
   final String period;
   final String emotion;
   final List<String> tags;
+  final DiaryEntry? diaryEntry;
+
   const WritingPage({
     super.key,
     required this.emotion,
     required this.tags,
     required this.date,
     required this.period,
+    this.diaryEntry,
   });
 
   @override
@@ -30,14 +33,20 @@ class WritingPage extends StatefulWidget {
 class _WritingPageState extends State<WritingPage> {
   final FocusNode _titleFocusNode = FocusNode(); // 텍스트 필드 포커스 제어
   final FocusNode _diaryFocusNode = FocusNode();
-  final TextEditingController _textController =
+  late TextEditingController _textController =
       TextEditingController(); //텍스트 필드 컨트롤러
-  final TextEditingController _diaryController = TextEditingController();
+  late TextEditingController _diaryController = TextEditingController();
   bool isNextButtonEnabled = false;
 
   @override
   void initState() {
     super.initState();
+
+    // 기존 데이터가 있다면 그 데이터를 텍스트 필드에 반영
+    _textController =
+        TextEditingController(text: widget.diaryEntry?.title ?? '');
+    _diaryController =
+        TextEditingController(text: widget.diaryEntry?.content ?? '');
 
     _diaryFocusNode.addListener(() {
       if (!_diaryFocusNode.hasFocus) {
@@ -70,11 +79,9 @@ class _WritingPageState extends State<WritingPage> {
     final isTitleValid = _textController.text.trim().isNotEmpty;
     final isContentValid = _diaryController.text.trim().isNotEmpty;
 
-    if (isNextButtonEnabled != (isTitleValid && isContentValid)) {
-      setState(() {
-        isNextButtonEnabled = isTitleValid && isContentValid;
-      });
-    }
+    setState(() {
+      isNextButtonEnabled = isTitleValid && isContentValid;
+    });
   }
 
   String getFormattedDate() {
@@ -137,6 +144,43 @@ class _WritingPageState extends State<WritingPage> {
               },
               icon: SvgPicture.asset('assets/icons/back_arrow_24.svg'),
             ),
+            actions: [
+              TextButton(
+                onPressed: isNextButtonEnabled
+                    ? () async {
+                        String key = '${widget.date}_${widget.period}';
+                        await saveDiaryEntry();
+
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => ViewDiary(diaryKey: key),
+                          ),
+                        );
+                      }
+                    : null, // 비활성화 시 아무 작업도 하지 않음
+                style: ButtonStyle(
+                  // 활성화 여부에 따른 텍스트 색상 설정
+                  foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (Set<WidgetState> states) {
+                      if (states.contains(WidgetState.disabled)) {
+                        return AppColors.gray; // 비활성화 상태의 색상
+                      }
+                      return AppColors.primary; // 활성화 상태의 색상
+                    },
+                  ),
+                ),
+                child: Text(
+                  '게시',
+                  style: TextStyle(
+                    fontFamily: 'SuitBold',
+                    fontSize: 16.sp,
+                    height: 32 / 16,
+                    letterSpacing: -0.32,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         body: SingleChildScrollView(
@@ -258,31 +302,6 @@ class _WritingPageState extends State<WritingPage> {
                 ),
               ],
             ),
-          ),
-        ),
-        bottomNavigationBar: Padding(
-          padding: EdgeInsets.only(
-              left: 20.w,
-              right: 20.w,
-              bottom: 16.h + MediaQuery.of(context).viewPadding.bottom,
-              top: 16.h),
-          child: PrimaryButtonH48(
-            text: '일기 저장',
-            isEnable: isNextButtonEnabled, // 태그 선택 상태에 따라 버튼 활성화
-            onPressed: () async {
-              String key = '${widget.date}_${widget.period}';
-
-              await saveDiaryEntry();
-
-              Navigator.push(
-                context,
-                CupertinoPageRoute(
-                  builder: (context) => ViewDiary(
-                    diaryKey: key,
-                  ),
-                ),
-              );
-            },
           ),
         ),
       ),

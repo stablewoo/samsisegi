@@ -54,6 +54,7 @@ class HomeContent extends StatelessWidget {
         Center(
           child: SizedBox(
             width: 265.w,
+            height: 45.h,
             child: Text(
               contentText, // 파라미터로 전달된 텍스트 사용
               style: TextStyle(
@@ -61,7 +62,7 @@ class HomeContent extends StatelessWidget {
                 fontFamily: 'SuitRegular',
                 fontSize: 12.sp,
                 height: 16 / 12,
-                wordSpacing: -0.24,
+                letterSpacing: -0.24,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
