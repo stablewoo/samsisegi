@@ -6,7 +6,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/design_system.dart';
 import 'package:samsisegi/diary_data/diary_entry.dart';
-import 'package:samsisegi/home_screen.dart';
+import 'package:samsisegi/home_screen/home_screen.dart';
 
 class ViewDiary extends StatefulWidget {
   final String diaryKey;
@@ -93,15 +93,11 @@ class _ViewDiaryState extends State<ViewDiary> {
           backgroundColor: Colors.white,
           leading: IconButton(
             onPressed: () {
-              Navigator.pushAndRemoveUntil(
+              Navigator.popUntil(
                 context,
-                CupertinoPageRoute(
-                  builder: (context) => const HomeScreen(),
-                ),
-                (Route<dynamic> route) => false, // 모든 이전 화면을 제거
-              ).then((_) {
-                _loadDiaryEntry();
-              });
+                ModalRoute.withName(
+                    HomeScreen.routeName), // 라우트 네임을 사용해 원하는 화면까지 pop
+              );
             },
             icon: SvgPicture.asset('assets/icons/back_arrow_24.svg'),
           ),

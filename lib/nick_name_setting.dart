@@ -4,10 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:samsisegi/custom_component/custom_button.dart';
 import 'package:samsisegi/design_system.dart';
-import 'package:samsisegi/home_screen.dart';
+import 'package:samsisegi/home_screen/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NickNameSetting extends StatefulWidget {
+  static const String routeName = '/nick_name_setting';
   const NickNameSetting({super.key});
 
   @override
@@ -17,6 +18,7 @@ class NickNameSetting extends StatefulWidget {
 class _NickNameSettingState extends State<NickNameSetting> {
   String nickName = ''; // 닉네임 입력값
   bool isEnable = false; // 버튼 활성화 여부
+
   final FocusNode _focusNode = FocusNode(); // 텍스트 필드 포커스 제어
 
   // 닉네임 입력값에 따른 상태 업데이트
