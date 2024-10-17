@@ -124,10 +124,11 @@ class _NickNameSettingState extends State<NickNameSetting> {
             isEnable: isEnable, // 버튼 활성화 여부
             onPressed: () {
               _saveNickName(); // 닉네임 저장
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 CupertinoPageRoute(
                   builder: (context) => const HomeScreen(),
+                  settings: const RouteSettings(name: HomeScreen.routeName),
                 ),
               );
             }

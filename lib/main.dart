@@ -4,18 +4,29 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:samsisegi/diary_data/diary_entry.dart';
 import 'package:samsisegi/nick_name_setting.dart';
-import 'package:samsisegi/home_screen/home_screen.dart'; // 홈 화면 추가 예시
+import 'package:samsisegi/home_screen/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // 홈 화면 추가 예시
 
 void main() async {
   // Hive 초기화
   await Hive.initFlutter();
   // DiaryEntry 어댑터 등록
   Hive.registerAdapter(DiaryEntryAdapter());
-  runApp(MyApp());
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? nickname = prefs.getString('nickName');
+
+  runApp(MyApp(
+      initialRoute:
+          nickname == null ? NickNameSetting.routeName : HomeScreen.routeName));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   State<MyApp> createState() => _MyAppState();

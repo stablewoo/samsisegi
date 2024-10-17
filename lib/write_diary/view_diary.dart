@@ -32,7 +32,6 @@ class _ViewDiaryState extends State<ViewDiary> {
 
   Future<void> _loadDiaryEntry() async {
     final box = await Hive.openBox<DiaryEntry>('diaryBox'); // Hive Box 열기
-    // diaryIndex 대신 key를 사용하여 일기를 가져옴
     final entry = box.get(widget.diaryKey); // 기존 diaryIndex 사용
 
     if (entry != null) {
@@ -46,41 +45,11 @@ class _ViewDiaryState extends State<ViewDiary> {
     });
   }
 
-  /* Future<void> _loadDiaryEntry() async {
-    final box = await Hive.openBox<DiaryEntry>('diaryBox'); // Open the Hive box
-    final entry = box.getAt(widget.diaryIndex);
-
-    if (entry != null) {
-      print('불러온 일기 데이터: ${entry.toString()}'); // 불러온 일기 데이터 출력
-    } else {
-      print('일기 데이터를 불러오지 못했습니다.');
-    }
-    setState(() {
-      diaryEntry = entry; // Get the diary entry by index
-      isLoading = false;
-    }); 
-  } */
-
-  // 날짜 형식을 변환하는 함수
-  String getFormattedDate(String date) {
-    // "yyyy-MM-dd" 형식의 문자열을 DateTime 객체로 변환
-    DateTime parsedDate = DateFormat('yyyy-MM-dd').parse(date);
-    // 원하는 형식으로 변환 (예: "2024년 10월 15일")
-    return DateFormat('yyyy/MM/dd').format(parsedDate);
-  }
-
-  // 시간대를 한글로 변환하는 함수
-  String getFormattedPeriod(String period) {
-    switch (period) {
-      case 'morning':
-        return '아침';
-      case 'afternoon':
-        return '오후';
-      case 'evening':
-        return '저녁/밤';
-      default:
-        return '시간대';
-    }
+  void _debugNavigationStack(BuildContext context) {
+    Navigator.popUntil(context, (route) {
+      print('Route name: ${route.settings.name}');
+      return true; // 스택을 끝까지 순회할 수 있도록 true 반환
+    });
   }
 
   @override
@@ -93,10 +62,15 @@ class _ViewDiaryState extends State<ViewDiary> {
           backgroundColor: Colors.white,
           leading: IconButton(
             onPressed: () {
+              // 스택 상태 확인
+              _debugNavigationStack(context);
+
               Navigator.popUntil(
                 context,
-                ModalRoute.withName(
-                    HomeScreen.routeName), // 라우트 네임을 사용해 원하는 화면까지 pop
+                (route) {
+                  print('Checking route: ${route.settings.name}'); // 스택 탐색 시 출력
+                  return route.settings.name == HomeScreen.routeName;
+                },
               );
             },
             icon: SvgPicture.asset('assets/icons/back_arrow_24.svg'),
@@ -197,5 +171,27 @@ class _ViewDiaryState extends State<ViewDiary> {
         ),
       ),
     );
+  }
+
+  // 날짜 형식을 변환하는 함수
+  String getFormattedDate(String date) {
+    // "yyyy-MM-dd" 형식의 문자열을 DateTime 객체로 변환
+    DateTime parsedDate = DateFormat('yyyy-MM-dd').parse(date);
+    // 원하는 형식으로 변환 (예: "2024년 10월 15일")
+    return DateFormat('yyyy/MM/dd').format(parsedDate);
+  }
+
+  // 시간대를 한글로 변환하는 함수
+  String getFormattedPeriod(String period) {
+    switch (period) {
+      case 'morning':
+        return '아침';
+      case 'afternoon':
+        return '오후';
+      case 'evening':
+        return '저녁/밤';
+      default:
+        return '시간대';
+    }
   }
 }

@@ -6,6 +6,7 @@ import 'package:samsisegi/design_system.dart';
 import 'package:samsisegi/home_screen/data_section.dart';
 import 'package:samsisegi/home_screen/diary_manager.dart';
 import 'package:samsisegi/write_diary/select_emotions.dart';
+import 'package:samsisegi/write_diary/view_diary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../custom_component/custom_bottom_navigation_bar.dart';
 import '../custom_component/empty_home_content.dart';
@@ -110,9 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: CustomBottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onItemTapped,
+        bottomNavigationBar: Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewPadding.bottom),
+          child: CustomBottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onItemTapped,
+          ),
         ),
       ),
     );
@@ -142,10 +147,22 @@ class _HomeScreenState extends State<HomeScreen> {
       String period, String contentText, String timeText, Color timeColor) {
     final entry = entries[period];
     if (entry != null) {
-      return HomeContent(
-          timeText: timeText,
-          titleText: entry.title,
-          contentText: entry.content);
+      return GestureDetector(
+        onTap: () {
+          String diaryKey =
+              '${DateFormat('yyyy-MM-dd').format(currentDate)}_$period';
+          Navigator.push(
+            context,
+            CupertinoPageRoute(
+              builder: (context) => ViewDiary(diaryKey: diaryKey),
+            ),
+          );
+        },
+        child: HomeContent(
+            timeText: timeText,
+            titleText: entry.title,
+            contentText: entry.content),
+      );
     } else {
       return EmptyHomeContent(
         timeText: timeText,

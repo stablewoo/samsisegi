@@ -91,7 +91,7 @@ class _WritingPageState extends State<WritingPage> {
         return '아침';
       case 'afternoon':
         return '오후';
-      case 'evening':
+      case 'night':
         return '저녁/밤';
       default:
         return '시간대';
