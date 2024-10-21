@@ -45,7 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == _currentIndex) {
+    if (index == _currentIndex && index == 0) {
+      // 이미 홈 화면에 있을 때만 '오늘' 날짜로 갱신
+      setState(() {
+        currentDate = DateTime.now(); // '오늘' 날짜로 갱신
+      });
       _refreshCurrentPage();
     } else {
       setState(() {
@@ -55,63 +59,61 @@ class _HomeScreenState extends State<HomeScreen> {
       // 페이지 이동 처리
       switch (index) {
         case 0:
-          setState(() {
-            _currentIndex = index;
-          });
+          // 홈 화면으로 전환 시
+          _currentIndex = 0;
           break;
         case 1:
-          DateTime now = DateTime.now();
-          String formattedDate = DateFormat('yyyy-MM-dd').format(now);
-          String period;
-
-          // 시간대에 따른 분기 처리 (새벽 5시 이전이면 전날 밤)
-          if (now.hour >= 5 && now.hour < 12) {
-            formattedDate = DateFormat('yyyy-MM-dd').format(now);
-            period = 'morning'; // 아침
-          } else if (now.hour >= 12 && now.hour < 18) {
-            formattedDate = DateFormat('yyyy-MM-dd').format(now);
-            period = 'afternoon'; // 오후
-          } else if (now.hour >= 18 && now.hour < 24) {
-            formattedDate = DateFormat('yyyy-MM-dd').format(now);
-            period = 'night'; // 저녁/밤
-          } else {
-            // 새벽 5시 이전이면 전날 밤
-            DateTime previousDay = now.subtract(const Duration(days: 1));
-            formattedDate = DateFormat('yyyy-MM-dd').format(previousDay);
-            period = 'night'; // 전날 저녁/밤
-          }
-
-          _navigateToPage(
-              SelectEmotions(
-                date: formattedDate,
-                period: period,
-              ),
-              1);
+          // SelectEmotions 화면으로 이동
+          _navigateToSelectEmotionsPage();
           break;
         case 2:
-          setState(() {
-            _currentIndex = index;
-          });
+          // MyPage로 전환 시
+          _currentIndex = 2;
           break;
       }
     }
   }
 
-  // 페이지 이동 후 돌아왔을 때 인덱스 복구
-  Future<void> _navigateToPage(Widget page, int index) async {
+  Future<void> _navigateToSelectEmotionsPage() async {
+    DateTime now = DateTime.now();
+    String formattedDate = DateFormat('yyyy-MM-dd').format(now);
+    String period;
+
+    // 시간대에 따른 분기 처리 (새벽 5시 이전이면 전날 밤)
+    if (now.hour >= 5 && now.hour < 12) {
+      formattedDate = DateFormat('yyyy-MM-dd').format(now);
+      period = 'morning'; // 아침
+    } else if (now.hour >= 12 && now.hour < 18) {
+      formattedDate = DateFormat('yyyy-MM-dd').format(now);
+      period = 'afternoon'; // 오후
+    } else if (now.hour >= 18 && now.hour < 24) {
+      formattedDate = DateFormat('yyyy-MM-dd').format(now);
+      period = 'night'; // 저녁/밤
+    } else {
+      // 새벽 5시 이전이면 전날 밤
+      DateTime previousDay = now.subtract(const Duration(days: 1));
+      formattedDate = DateFormat('yyyy-MM-dd').format(previousDay);
+      period = 'night'; // 전날 저녁/밤
+    }
+
     final result = await Navigator.push(
       context,
-      CupertinoPageRoute(builder: (context) => page),
+      CupertinoPageRoute(
+        builder: (context) =>
+            SelectEmotions(date: formattedDate, period: period),
+      ),
     );
 
+    // 돌아왔을 때 홈 화면 갱신
     if (result != null && result is DateTime) {
-      print("HomeScreen으로 전달된 날짜: $result"); // 여기가 실행되는지 확인
       setState(() {
-        _currentIndex = 0; // 홈 화면으로 돌아옴
-        currentDate = result; // 선택된 날짜로 갱신
+        currentDate = result; // 전달된 날짜로 홈 화면 갱신
+        _currentIndex = 0; // 홈 화면으로 인덱스 전환
       });
     } else {
-      print("전달된 값이 없거나 잘못된 형식입니다."); // 이 부분도 확인
+      setState(() {
+        _currentIndex = 0; // 홈 화면으로 인덱스 전환
+      });
     }
   }
 

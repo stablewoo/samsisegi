@@ -7,14 +7,21 @@ import 'package:samsisegi/home_screen/home_screen.dart';
 import 'package:samsisegi/nick_name_setting.dart';
 import 'package:samsisegi/home_screen/home_contents.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // 홈 화면 추가 예시
+import 'package:firebase_core/firebase_core.dart'; // Firebase Core import
+import 'firebase_options.dart'; // Firebase options import
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase 초기화
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // Hive 초기화
   await Hive.initFlutter();
   // DiaryEntry 어댑터 등록
   Hive.registerAdapter(DiaryEntryAdapter());
-
-  WidgetsFlutterBinding.ensureInitialized();
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String? nickname = prefs.getString('nickName');

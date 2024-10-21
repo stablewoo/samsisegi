@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "377638888585",
+    "project_id": "samsisegi-5dc30",
+    "storage_bucket": "samsisegi-5dc30.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377638888585:android:951dfcfbf0436229909258",
+        "android_client_info": {
+          "package_name": "com.onehour.samsisegi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEoSffb0oXAficoXAU2Rnx1gD1Kahu9MQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
