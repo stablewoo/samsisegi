@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/diary_data/diary_cache.dart';
 import 'package:samsisegi/home_screen/data_section.dart';
 import 'package:samsisegi/home_screen/diary_manager.dart';
 import 'package:samsisegi/main.dart';
@@ -36,7 +37,7 @@ class _HomeScreenState extends State<HomeContents> with RouteAware {
     super.initState();
     currentDate = widget.selectedDate;
     print("HomeContents에서 사용될 날짜: $currentDate");
-    _loadDiaryEntries();
+    _loadMonthlyEntries(); // 초기화 시 해당 월의 일기 데이터 불러오기
   }
 
   @override
@@ -46,9 +47,57 @@ class _HomeScreenState extends State<HomeContents> with RouteAware {
       setState(() {
         currentDate =
             widget.selectedDate; // widget.selectedDate로 currentDate 갱신
-        _loadDiaryEntries(); // 날짜가 바뀔 때 일기 항목 다시 불러오기
+        _loadMonthlyEntries(); // 날짜가 바뀔 때 일기 항목 다시 불러오기
       });
     }
+  }
+
+  Future<void> _loadMonthlyEntries() async {
+    String yearMonth = DateFormat('yyyy-MM').format(currentDate);
+
+    if (DiaryCache.getMonthlyEntries(yearMonth) == null) {
+      await DiaryCache.loadMonthlyEntries(yearMonth);
+    }
+
+    _loadEntriesForCurrentDate();
+  }
+
+  void _loadEntriesForCurrentDate() {
+    String yearMonth = DateFormat('yyyy-MM').format(currentDate);
+    String formattedDate = DateFormat('yyyy-MM-dd').format(currentDate);
+
+    // 해당 월의 데이터를 가져옴
+    final monthlyEntries = DiaryCache.getMonthlyEntries(yearMonth);
+
+    if (monthlyEntries != null) {
+      // 필터링을 위해 각 시간대에 맞는 데이터를 직접 찾음
+      DiaryEntry? morningEntry;
+      DiaryEntry? afternoonEntry;
+      DiaryEntry? nightEntry;
+
+      for (var entry in monthlyEntries) {
+        if (entry.date == formattedDate) {
+          if (entry.period == 'morning') {
+            morningEntry = entry;
+          } else if (entry.period == 'afternoon') {
+            afternoonEntry = entry;
+          } else if (entry.period == 'night') {
+            nightEntry = entry;
+          }
+        }
+      }
+
+      // 찾은 데이터를 entries에 할당
+      entries = {
+        'morning': morningEntry,
+        'afternoon': afternoonEntry,
+        'night': nightEntry,
+      };
+    } else {
+      entries = {}; // 데이터가 없으면 빈 맵 설정
+    }
+
+    setState(() {});
   }
 
   @override
@@ -71,7 +120,7 @@ class _HomeScreenState extends State<HomeContents> with RouteAware {
   @override
   void didPopNext() {
     // HomeScreen으로 다시 돌아왔을 때 호출됨
-    _loadDiaryEntries(); // 데이터를 다시 불러옴
+    _loadEntriesForCurrentDate(); // 데이터를 다시 불러옴
     super.didPopNext();
   }
 
@@ -91,11 +140,11 @@ class _HomeScreenState extends State<HomeContents> with RouteAware {
         if (details.primaryVelocity! < 0) {
           setState(
               () => currentDate = currentDate.add(const Duration(days: 1)));
-          _loadDiaryEntries();
+          _checkAndLoadNewMonth();
         } else if (details.primaryVelocity! > 0) {
           setState(() =>
               currentDate = currentDate.subtract(const Duration(days: 1)));
-          _loadDiaryEntries();
+          _checkAndLoadNewMonth();
         }
       },
       child: Scaffold(
@@ -128,18 +177,23 @@ class _HomeScreenState extends State<HomeContents> with RouteAware {
   Widget _buildHomeContent(
       String period, String contentText, String timeText, Color timeColor) {
     final entry = entries[period];
+
+    bool isTimeDisabled = timeColor == AppColors.gray;
+
     if (entry != null) {
       return GestureDetector(
-        onTap: () {
-          String diaryKey =
-              '${DateFormat('yyyy-MM-dd').format(currentDate)}_$period';
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (context) => ViewDiary(diaryKey: diaryKey),
-            ),
-          );
-        },
+        onTap: isTimeDisabled
+            ? null
+            : () {
+                String diaryKey =
+                    '${DateFormat('yyyy-MM-dd').format(currentDate)}_$period';
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => ViewDiary(diaryKey: diaryKey),
+                  ),
+                );
+              },
         child: HomeContent(
             timeText: timeText,
             titleText: entry.title,
@@ -150,16 +204,27 @@ class _HomeScreenState extends State<HomeContents> with RouteAware {
         timeText: timeText,
         contentText: contentText,
         timeColor: timeColor,
-        onTap: () {
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-                builder: (context) => SelectEmotions(
-                    date: DateFormat('yyyy-MM-dd').format(currentDate),
-                    period: period)),
-          );
-        },
+        onTap: isTimeDisabled
+            ? null
+            : () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                      builder: (context) => SelectEmotions(
+                          date: DateFormat('yyyy-MM-dd').format(currentDate),
+                          period: period)),
+                );
+              },
       );
+    }
+  }
+
+  void _checkAndLoadNewMonth() {
+    String newMonth = DateFormat('yyyy-MM').format(currentDate);
+    if (DiaryCache.getMonthlyEntries(newMonth) == null) {
+      _loadMonthlyEntries(); // 새로운 월의 데이터를 불러옴
+    } else {
+      _loadEntriesForCurrentDate(); // 캐시된 데이터 사용
     }
   }
 

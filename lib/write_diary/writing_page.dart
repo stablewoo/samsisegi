@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/custom_component/custom_button.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/diary_data/diary_cache.dart';
 import 'package:samsisegi/diary_data/diary_entry.dart';
 import 'package:samsisegi/write_diary/view_diary.dart';
 
@@ -122,6 +123,9 @@ class _WritingPageState extends State<WritingPage> {
 
     // Key를 사용하여 일기를 저장
     await box.put(key, newDiary); // 일기 저장 (key를 사용)
+
+    // 저장 후 캐시 업데이트
+    await DiaryCache.updateCache(newDiary);
 
     print('일기 저장 완료: ${newDiary.toString()}'); // 저장된 일기 데이터 출력
     print('저장된 키: $key'); // 저장된 Key 출력

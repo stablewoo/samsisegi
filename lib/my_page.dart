@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/custom_component/custom_bottom_navigation_bar.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/diary_data/diary_cache.dart';
 import 'package:samsisegi/diary_data/diary_entry.dart';
 import 'package:samsisegi/main.dart';
 
@@ -19,7 +20,7 @@ class MyPage extends StatefulWidget {
 
 class _MyPageState extends State<MyPage> with RouteAware {
   DateTime _selectedDate = DateTime.now();
-  List<DateTime> _diaryDates = [];
+  Map<String, List<DateTime>> _cachedDiaryDates = {}; // 캐시된 일기 날짜
   Map<DateTime, String> _diaryEmotions = {};
   int _currentStreak = 0;
 
@@ -35,7 +36,6 @@ class _MyPageState extends State<MyPage> with RouteAware {
   void initState() {
     super.initState();
     _loadDiaryDates(); // Hive에서 일기 날짜 로드
-    _updateStreak();
   }
 
   @override
@@ -65,59 +65,68 @@ class _MyPageState extends State<MyPage> with RouteAware {
   }
 
   Future<void> _loadDiaryDates() async {
-    final box = await Hive.openBox<DiaryEntry>('diaryBox');
-    List<DateTime> diaryDates = [];
+    String yearMonth = DateFormat('yyyy-MM').format(_selectedDate);
 
-    Map<DateTime, String> emotions = {};
+    // 캐시에 해당 월의 데이터가 없으면 새로 로드
+    if (!_cachedDiaryDates.containsKey(yearMonth)) {
+      List<DiaryEntry>? monthlyEntries =
+          DiaryCache.getMonthlyEntries(yearMonth);
 
-    for (var key in box.keys) {
-      // Hive의 키는 'yyyy-MM-dd_period' 형식이므로 날짜만 추출
-      String dateStr = key.split('_')[0];
-      String period = key.split('_')[1];
-      DateTime diaryDate = DateFormat('yyyy-MM-dd').parse(dateStr);
-
-      if (!diaryDates.contains(diaryDate)) {
-        diaryDates.add(diaryDate); // 중복된 날짜는 추가하지 않음
+      if (monthlyEntries == null) {
+        await DiaryCache.loadMonthlyEntries(yearMonth);
+        monthlyEntries = DiaryCache.getMonthlyEntries(yearMonth);
       }
 
-      DiaryEntry? entry = box.get(key);
-      if (entry != null) {
-        if (emotions[diaryDate] == null ||
-            period == 'night' ||
-            (period == 'afternoon' && emotions[diaryDate] != 'night')) {
+      List<DateTime> diaryDates = [];
+      Map<DateTime, String> emotions = {};
+
+      // 월간 데이터를 처리하여 일기 날짜와 감정을 추출
+      for (var entry in monthlyEntries!) {
+        DateTime diaryDate = DateFormat('yyyy-MM-dd').parse(entry.date);
+
+        if (!diaryDates.contains(diaryDate)) {
+          diaryDates.add(diaryDate);
+        }
+
+        // 마지막 감정이 'night'이면 그것을 사용
+        if (emotions[diaryDate] == null || entry.period == 'night') {
           emotions[diaryDate] = entry.emotion;
         }
       }
+
+      // 캐시에 저장
+      setState(() {
+        _cachedDiaryDates[yearMonth] = diaryDates; // 월별로 일기 날짜 캐싱
+        _diaryEmotions.addAll(emotions); // 일기 감정 캐싱
+      });
+
+      _updateStreak(); // 캐시 로드 후 streak 업데이트
     }
-
-    setState(() {
-      _diaryDates = diaryDates;
-      _diaryEmotions = emotions;
-    });
-
-    // 디버깅: 저장된 날짜들을 출력해 확인합니다.
-    print("저장된 일기 날짜들: $_diaryDates");
   }
 
   Future<int> _calculateStreak() async {
     DateTime today = DateTime.now();
     int streak = 0;
 
-    // 오늘 일기 작성 여부 확인
-    bool wroteToday = _diaryDates.any((date) =>
-        date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day);
+    // 캐시에서 오늘 일기 작성 여부 확인
+    bool wroteToday = _cachedDiaryDates.values.expand((dates) => dates).any(
+          (date) =>
+              date.year == today.year &&
+              date.month == today.month &&
+              date.day == today.day,
+        );
 
     print("오늘 일기 작성 여부: $wroteToday");
 
     for (int i = 0; i < 365; i++) {
       DateTime checkDate = today.subtract(Duration(days: i));
 
-      bool hasDiary = _diaryDates.any((date) =>
-          date.year == checkDate.year &&
-          date.month == checkDate.month &&
-          date.day == checkDate.day);
+      bool hasDiary = _cachedDiaryDates.values.expand((dates) => dates).any(
+            (date) =>
+                date.year == checkDate.year &&
+                date.month == checkDate.month &&
+                date.day == checkDate.day,
+          );
 
       print("확인 중인 날짜: $checkDate, 일기 작성 여부: $hasDiary");
 
@@ -227,6 +236,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
               setState(() {
                 _selectedDate =
                     DateTime(_selectedDate.year, _selectedDate.month - 1, 1);
+                _loadDiaryDates();
               });
             },
           ),
@@ -242,6 +252,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
               setState(() {
                 _selectedDate =
                     DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
+                _loadDiaryDates();
               });
             },
           ),
@@ -285,10 +296,14 @@ class _MyPageState extends State<MyPage> with RouteAware {
           currentDate.month == DateTime.now().month &&
           currentDate.year == DateTime.now().year;
 
-      bool hasDiary = _diaryDates.any((date) =>
-          date.year == currentDate.year &&
-          date.month == currentDate.month &&
-          date.day == currentDate.day);
+      bool hasDiary = _cachedDiaryDates[_selectedDate.year.toString() +
+                  "-" +
+                  _selectedDate.month.toString()]
+              ?.any((date) =>
+                  date.year == currentDate.year &&
+                  date.month == currentDate.month &&
+                  date.day == currentDate.day) ??
+          false;
 
       String? emotion = _diaryEmotions[currentDate]; //감정 가져오기
 

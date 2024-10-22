@@ -1,45 +1,67 @@
 import 'package:hive/hive.dart';
+import 'package:intl/intl.dart';
 import 'package:samsisegi/diary_data/diary_entry.dart';
 
 class DiaryCache {
-  static Map<String, DiaryEntry> cachedEntries = {};
+  static Map<String, List<DiaryEntry>> cachedEntries = {};
 
   // 로컬 저장소에서 일기 데이터를 불러오는 메서드
-  static Future<void> loadEntries() async {
+  static Future<void> loadMonthlyEntries(String yearMonth) async {
     final box = await Hive.openBox<DiaryEntry>('diaryBox');
-    cachedEntries.clear();
+    cachedEntries.remove(yearMonth);
+    cachedEntries[yearMonth] = [];
 
     for (var key in box.keys) {
-      // key는 'yyyy-MM-dd_period' 형식으로 저장
-      DiaryEntry? entry = box.get(key);
-      if (entry != null) {
-        cachedEntries[key] = entry; // key는 '날짜_기간' 형식
-        print('캐싱된 데이터: $key');
+      // key가 'yyyy-MM-dd_period' 형식이므로 'yyyy-MM'을 추출해 월 단위로 비교
+      if (key.startsWith(yearMonth)) {
+        DiaryEntry? entry = box.get(key);
+        if (entry != null) {
+          cachedEntries[yearMonth]?.add(entry);
+        }
       }
     }
+    print('캐싱된 $yearMonth 데이터: ${cachedEntries[yearMonth]?.length}개');
   }
 
-  // 캐시에서 일기 가져오기
-  static DiaryEntry? getEntry(String date, String period) {
-    String key = '${date}_$period';
-    if (cachedEntries.containsKey(key)) {
-      print('캐시에서 데이터 가져옴: $key'); // 캐시에서 불러올 때 출력
-      return cachedEntries[key];
+  // 특정 월의 일기 데이터 가져오기
+  static List<DiaryEntry>? getMonthlyEntries(String yearMonth) {
+    if (cachedEntries.containsKey(yearMonth)) {
+      print('캐시에서 $yearMonth 데이터를 가져옴');
+      return cachedEntries[yearMonth];
     } else {
-      print('캐시에 데이터 없음. 로컬에서 불러와야 함: $key'); // 캐시에 없을 때 출력
+      print('$yearMonth 데이터가 캐시에 없음. 로컬에서 불러와야 함.');
       return null;
     }
   }
 
-  // 새로운 일기 추가 및 캐시 업데이트
-  static void addOrUpdateEntry(String date, String period, DiaryEntry entry) {
-    String key = '${date}_$period';
-    cachedEntries[key] = entry;
-  }
+  // 일기를 저장한 후 캐시 업데이트
+  static Future<void> updateCache(DiaryEntry newDiary) async {
+    String yearMonth =
+        DateFormat('yyyy-MM').format(DateTime.parse(newDiary.date));
 
-  // 특정 일기 삭제
-  static void deleteEntry(String date, String period) {
-    String key = '${date}_$period';
-    cachedEntries.remove(key);
+    // 캐시에 해당 월 데이터가 있는지 확인
+    List<DiaryEntry>? monthlyEntries = cachedEntries[yearMonth];
+
+    if (monthlyEntries == null) {
+      // 해당 월 데이터가 캐시에 없으면 새로 로드
+      await loadMonthlyEntries(yearMonth);
+      monthlyEntries = cachedEntries[yearMonth];
+    }
+
+    // 해당 월의 데이터를 업데이트
+    int existingIndex = monthlyEntries!.indexWhere((entry) =>
+        entry.date == newDiary.date && entry.period == newDiary.period);
+
+    if (existingIndex != -1) {
+      // 기존 일기가 있으면 업데이트
+      monthlyEntries[existingIndex] = newDiary;
+    } else {
+      // 없으면 새로 추가
+      monthlyEntries.add(newDiary);
+    }
+
+    // 캐시에 업데이트된 데이터를 저장
+    cachedEntries[yearMonth] = monthlyEntries;
+    print('$yearMonth 캐시 업데이트 완료');
   }
 }

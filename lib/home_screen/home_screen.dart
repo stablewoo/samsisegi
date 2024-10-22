@@ -1,12 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/custom_component/custom_bottom_navigation_bar.dart';
 import 'package:samsisegi/design_system.dart';
+import 'package:samsisegi/diary_data/diary_cache.dart';
+import 'package:samsisegi/diary_data/diary_entry.dart';
 import 'package:samsisegi/home_screen/home_contents.dart';
 import 'package:samsisegi/my_page.dart';
 import 'package:samsisegi/write_diary/select_emotions.dart';
+import 'package:samsisegi/write_diary/view_diary.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int previousIndex = 0;
   DateTime currentDate = DateTime.now();
   String? nickName = '';
 
@@ -45,6 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onItemTapped(int index) {
+    print('현재 인덱스: $_currentIndex');
+    print('탭된 인덱스: $index');
+
     if (index == _currentIndex && index == 0) {
       // 이미 홈 화면에 있을 때만 '오늘' 날짜로 갱신
       setState(() {
@@ -53,8 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _refreshCurrentPage();
     } else {
       setState(() {
+        previousIndex = _currentIndex;
         _currentIndex = index;
       });
+
+      print('이전 인덱스 저장: $previousIndex');
+      print('새 인덱스로 전환: $_currentIndex');
 
       // 페이지 이동 처리
       switch (index) {
@@ -96,24 +108,59 @@ class _HomeScreenState extends State<HomeScreen> {
       period = 'night'; // 전날 저녁/밤
     }
 
-    final result = await Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) =>
-            SelectEmotions(date: formattedDate, period: period),
-      ),
-    );
+    String yearMonth = DateFormat('yyyy-MM').format(DateTime.now());
 
-    // 돌아왔을 때 홈 화면 갱신
-    if (result != null && result is DateTime) {
-      setState(() {
-        currentDate = result; // 전달된 날짜로 홈 화면 갱신
-        _currentIndex = 0; // 홈 화면으로 인덱스 전환
-      });
-    } else {
-      setState(() {
-        _currentIndex = 0; // 홈 화면으로 인덱스 전환
-      });
+    // 캐시에서 해당 월의 데이터를 확인
+    List<DiaryEntry>? monthlyEntries = DiaryCache.getMonthlyEntries(yearMonth);
+
+    bool diaryExists = false;
+
+    if (monthlyEntries != null) {
+      // 캐시에서 해당 날짜와 시간대에 맞는 일기가 있는지 확인 (firstWhere 대신 for-loop 사용)
+      for (var entry in monthlyEntries) {
+        if (entry.date == formattedDate && entry.period == period) {
+          diaryExists = true;
+          String diaryKey = '${formattedDate}_$period';
+
+          // 일기가 존재하면 ViewDiary로 이동
+          await Navigator.push(
+            context,
+            CupertinoPageRoute(
+              builder: (context) => ViewDiary(diaryKey: diaryKey),
+            ),
+          );
+          setState(() {
+            _currentIndex = previousIndex;
+          });
+          print('이전 인덱스로 복구: $previousIndex');
+          return; // 일기 존재 시 해당 페이지로 이동 후 함수 종료
+        }
+      }
+    }
+
+    // 일기가 존재하지 않으면 감정 선택 페이지로 이동
+    if (!diaryExists) {
+      final result = await Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) =>
+              SelectEmotions(date: formattedDate, period: period),
+        ),
+      );
+
+      // 돌아왔을 때 홈 화면 갱신
+      if (result != null && result is DateTime) {
+        setState(() {
+          currentDate = result; // 전달된 날짜로 홈 화면 갱신
+          _currentIndex = previousIndex; // 홈 화면으로 인덱스 전환
+          print('돌아와서 인덱스 복구: $previousIndex');
+        });
+      } else {
+        setState(() {
+          _currentIndex = previousIndex; // 홈 화면으로 인덱스 전환
+          print('돌아와서 인덱스 복구: $previousIndex');
+        });
+      }
     }
   }
 
