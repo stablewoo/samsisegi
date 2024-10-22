@@ -106,7 +106,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
 
   Future<int> _calculateStreak() async {
     DateTime today = DateTime.now();
-    int streak = 0;
+    DateTime checkDate = today;
 
     // 캐시에서 오늘 일기 작성 여부 확인
     bool wroteToday = _cachedDiaryDates.values.expand((dates) => dates).any(
@@ -116,16 +116,22 @@ class _MyPageState extends State<MyPage> with RouteAware {
               date.day == today.day,
         );
 
-    print("오늘 일기 작성 여부: $wroteToday");
+    if (!wroteToday) {
+      checkDate = today.subtract(const Duration(days: 1));
+    }
+
+    print("기준이 되는 날짜: $checkDate");
+
+    int streak = 0;
 
     for (int i = 0; i < 365; i++) {
-      DateTime checkDate = today.subtract(Duration(days: i));
+      DateTime currentDate = checkDate.subtract(Duration(days: i));
 
       bool hasDiary = _cachedDiaryDates.values.expand((dates) => dates).any(
             (date) =>
-                date.year == checkDate.year &&
-                date.month == checkDate.month &&
-                date.day == checkDate.day,
+                date.year == currentDate.year &&
+                date.month == currentDate.month &&
+                date.day == currentDate.day,
           );
 
       print("확인 중인 날짜: $checkDate, 일기 작성 여부: $hasDiary");
@@ -136,7 +142,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
         break;
       }
     }
-
+    print("최종 streak: $streak");
     return streak;
   }
 
