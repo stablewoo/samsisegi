@@ -49,7 +49,7 @@ class _MyAppState extends State<MyApp> {
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       builder: (context, child) => MaterialApp(
-        initialRoute: NickNameSetting.routeName, // 초기 루트 설정
+        initialRoute: widget.initialRoute, // 초기 루트 설정
         navigatorObservers: [routeObserver],
         routes: {
           NickNameSetting.routeName: (context) =>

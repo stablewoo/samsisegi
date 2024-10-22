@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:samsisegi/custom_component/custom_bottom_navigation_bar.dart';
@@ -20,6 +21,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
   DateTime _selectedDate = DateTime.now();
   List<DateTime> _diaryDates = [];
   Map<DateTime, String> _diaryEmotions = {};
+  int _currentStreak = 0;
 
   // 날짜 선택을 위한 메서드
   void _selectDate(DateTime date) {
@@ -33,6 +35,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
   void initState() {
     super.initState();
     _loadDiaryDates(); // Hive에서 일기 날짜 로드
+    _updateStreak();
   }
 
   @override
@@ -44,6 +47,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
     if (modalRoute is PageRoute) {
       routeObserver.subscribe(this, modalRoute);
     }
+    _updateStreak();
   }
 
   @override
@@ -56,6 +60,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
   void didPopNext() {
     // MyPage로 다시 돌아왔을 때 호출됨
     _loadDiaryDates(); // 데이터를 다시 불러옴
+    _updateStreak();
     super.didPopNext();
   }
 
@@ -89,6 +94,48 @@ class _MyPageState extends State<MyPage> with RouteAware {
       _diaryDates = diaryDates;
       _diaryEmotions = emotions;
     });
+
+    // 디버깅: 저장된 날짜들을 출력해 확인합니다.
+    print("저장된 일기 날짜들: $_diaryDates");
+  }
+
+  Future<int> _calculateStreak() async {
+    DateTime today = DateTime.now();
+    int streak = 0;
+
+    // 오늘 일기 작성 여부 확인
+    bool wroteToday = _diaryDates.any((date) =>
+        date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day);
+
+    print("오늘 일기 작성 여부: $wroteToday");
+
+    for (int i = 0; i < 365; i++) {
+      DateTime checkDate = today.subtract(Duration(days: i));
+
+      bool hasDiary = _diaryDates.any((date) =>
+          date.year == checkDate.year &&
+          date.month == checkDate.month &&
+          date.day == checkDate.day);
+
+      print("확인 중인 날짜: $checkDate, 일기 작성 여부: $hasDiary");
+
+      if (hasDiary) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  void _updateStreak() async {
+    int streak = await _calculateStreak();
+    setState(() {
+      _currentStreak = streak;
+    });
   }
 
   @override
@@ -103,7 +150,8 @@ class _MyPageState extends State<MyPage> with RouteAware {
             children: [
               SizedBox(height: 16.h),
               _buildDivider(),
-              SizedBox(height: 40.h),
+              SizedBox(height: 24.h),
+              _streakCountdown(),
               _buildMonthSelector(),
               _buildCalendar(),
             ],
@@ -115,11 +163,63 @@ class _MyPageState extends State<MyPage> with RouteAware {
 
   Divider _buildDivider() => Divider(color: Colors.black, height: 1.h);
 
+  Widget _streakCountdown() {
+    return Container(
+      padding: EdgeInsets.only(left: 20.w, top: 17.h, bottom: 17.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6DB),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/streak_40.svg',
+            width: 40.w,
+            height: 40.h,
+          ),
+          SizedBox(width: 12.w),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '$_currentStreak',
+                    style:
+                        TextStyle(fontFamily: 'SuitExtraBold', fontSize: 24.sp),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    '일 연속',
+                    style: TextStyle(fontFamily: 'SuitMedium', fontSize: 16.sp),
+                  ),
+                ],
+              ),
+              Text(
+                '매일 오늘의 순간을 기록해보세요!',
+                style: TextStyle(
+                  color: AppColors.gray,
+                  fontFamily: 'SuitMedium',
+                  fontSize: 14.sp,
+                  height: 22 / 14,
+                  letterSpacing: -0.28,
+                ),
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
   Widget _buildMonthSelector() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
             icon: Icon(Icons.arrow_left),
@@ -130,10 +230,12 @@ class _MyPageState extends State<MyPage> with RouteAware {
               });
             },
           ),
+          SizedBox(width: 16.w),
           Text(
             DateFormat('MMM yyyy').format(_selectedDate),
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
+          SizedBox(width: 16.w),
           IconButton(
             icon: Icon(Icons.arrow_right),
             onPressed: () {
@@ -179,6 +281,10 @@ class _MyPageState extends State<MyPage> with RouteAware {
     // 각 날짜 위젯
     for (int i = 1; i <= daysInMonth; i++) {
       final currentDate = DateTime(_selectedDate.year, _selectedDate.month, i);
+      bool isToday = currentDate.day == DateTime.now().day &&
+          currentDate.month == DateTime.now().month &&
+          currentDate.year == DateTime.now().year;
+
       bool hasDiary = _diaryDates.any((date) =>
           date.year == currentDate.year &&
           date.month == currentDate.month &&
@@ -211,12 +317,14 @@ class _MyPageState extends State<MyPage> with RouteAware {
             children: [
               Flexible(
                 child: Container(
-                  height: 32.h, // 원하는 고정 높이
-                  width: 32.w, // 원하는 고정 너비
+                  height: 40.h, // 원하는 고정 높이
+                  width: 40.w, // 원하는 고정 너비
                   decoration: BoxDecoration(
-                    color: hasDiary
-                        ? Colors.green
-                        : Colors.grey[200], // 일기가 있는 날 녹색 표시
+                    color: isToday
+                        ? Colors.red
+                        : hasDiary
+                            ? Colors.green
+                            : Colors.grey[200], // 일기가 있는 날 녹색 표시
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
@@ -226,7 +334,7 @@ class _MyPageState extends State<MyPage> with RouteAware {
               SizedBox(height: 4.h),
               Text(
                 i.toString(),
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(fontFamily: 'SuitRegular', fontSize: 12),
               ),
             ],
           ),
@@ -237,9 +345,9 @@ class _MyPageState extends State<MyPage> with RouteAware {
     return GridView.count(
       shrinkWrap: true,
       crossAxisCount: 7,
-      mainAxisSpacing: 12.h,
-      crossAxisSpacing: 4.w,
-      childAspectRatio: 0.8,
+      mainAxisSpacing: 8.h,
+      crossAxisSpacing: 12.w,
+      childAspectRatio: 0.65,
       children: dayWidgets,
     );
   }

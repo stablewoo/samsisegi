@@ -79,6 +79,7 @@ flutter:
       - assets/icons/edit_calendar_18.svg
       - assets/icons/person_18.svg
       - assets/icons/back_arrow_24.svg
+      - assets/icons/streak_40.svg
       - assets/images/excited_32.png
       - assets/images/feel_great_32.png
       - assets/images/comfortable_32.png
